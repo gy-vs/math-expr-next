@@ -8,14 +8,16 @@ import { nthRootNumber } from '../../plain/number/index.js'
 
 const name = 'nthRoot'
 const dependencies = [
+  'config',
   'typed',
   'matrix',
   'equalScalar',
   'BigNumber',
+  'Fraction',
   'concat'
 ]
 
-export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ typed, matrix, equalScalar, BigNumber, concat }) => {
+export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ config, typed, matrix, equalScalar, BigNumber, Fraction, concat }) => {
   const matAlgo01xDSid = createMatAlgo01xDSid({ typed })
   const matAlgo02xDS0 = createMatAlgo02xDS0({ typed, equalScalar })
   const matAlgo06xS0S0 = createMatAlgo06xS0S0({ typed, equalScalar })
@@ -46,10 +48,10 @@ export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ type
    *
    *     sqrt, pow
    *
-   * @param {number | BigNumber | Array | Matrix | Complex} a
+   * @param {number | BigNumber | Fraction | Array | Matrix | Complex} a
    *              Value for which to calculate the nth root
-   * @param {number | BigNumber} [root=2]    The root.
-   * @return {number | Complex | Array | Matrix} Returns the nth root of `a`
+   * @param {number | BigNumber | Fraction} [root=2]    The root.
+   * @return {number | Complex | Fraction | Array | Matrix} Returns the nth root of `a`
    */
   function complexErr () {
     throw new Error(
@@ -64,6 +66,9 @@ export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ type
 
       BigNumber: x => _bigNthRoot(x, new BigNumber(2)),
       'BigNumber, BigNumber': _bigNthRoot,
+
+      Fraction: x => _nthRootFraction(x, new Fraction(2)),
+      'Fraction, Fraction': _nthRootFraction,
 
       Complex: complexErr,
       'Complex, number': complexErr,
@@ -100,7 +105,7 @@ export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ type
       'Array, SparseMatrix': typed.referTo('DenseMatrix,SparseMatrix', selfDS =>
         (x, y) => selfDS(matrix(x), y)),
 
-      'number | BigNumber, SparseMatrix': typed.referToSelf(self => (x, y) => {
+      'number | BigNumber | Fraction, SparseMatrix': typed.referToSelf(self => (x, y) => {
         // density must be one (no zeros in matrix)
         if (y.density() === 1) {
           // sparse - scalar
@@ -112,7 +117,7 @@ export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ type
       })
     },
     matrixAlgorithmSuite({
-      scalar: 'number | BigNumber',
+      scalar: 'number | BigNumber | Fraction',
       SD: matAlgo02xDS0,
       Ss: matAlgo11xS0s,
       sS: false
@@ -157,6 +162,44 @@ export const createNthRoot = /* #__PURE__ */ factory(name, dependencies, ({ type
     // so (-1) ^ (1/root) = -1
     x = a.isNeg() ? x.neg() : x
     return new BigNumber((inv ? one.div(x) : x).toPrecision(precision))
+  }
+
+  /**
+   * Calculate the nth root of a for Fractions, solve x^root == a
+   * Returns an exact Fraction when the result is rational,
+   * following the same conventions as nthRoot for numbers otherwise.
+   * @param {Fraction} a
+   * @param {Fraction} root
+   * @private
+   */
+  function _nthRootFraction (a, root) {
+    if (root.n === 0n) {
+      throw new Error('Root must be non-zero')
+    }
+    if (a.s < 0n && (root.d !== 1n || root.n % 2n !== 1n)) {
+      throw new Error('Root must be odd when a is negative.')
+    }
+
+    // edge case zero: a negative root of zero is infinity, like for numbers
+    if (a.n === 0n) {
+      return root.s < 0n ? Infinity : new Fraction(0)
+    }
+
+    // the nth root of a negative value with an odd root
+    // is the negated nth root of its absolute value
+    const negate = a.s < 0n
+    const result = (negate ? a.neg() : a).pow(root.inverse())
+
+    if (result !== null) {
+      return negate ? result.neg() : result
+    }
+
+    if (config.predictable) {
+      throw new Error('Result of nthRoot is non-rational and cannot be expressed as a fraction')
+    }
+
+    // non-rational value -> downgrade to number
+    return nthRootNumber(a.valueOf(), root.valueOf())
   }
 })
 

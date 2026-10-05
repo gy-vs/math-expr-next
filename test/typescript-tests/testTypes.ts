@@ -626,6 +626,9 @@ Chaining examples
   expectTypeOf(math.chain(math.complex(1, 2)).cbrt()).toMatchTypeOf<
     MathJsChain<Complex>
   >()
+  expectTypeOf(math.chain(math.fraction(1, 8)).cbrt()).toMatchTypeOf<
+    MathJsChain<Fraction>
+  >()
   // @ts-expect-error ... verify cbrt does not run on arrays.
   assert.throws(() => math.chain([1, 2]).cbrt(), TypeError)
   assert.throws(
@@ -641,6 +644,29 @@ Chaining examples
         .cbrt(),
     TypeError
   )
+
+  // sqrt
+  expectTypeOf(math.chain(1).sqrt()).toMatchTypeOf<MathJsChain<number>>()
+  expectTypeOf(math.chain(math.bignumber(1)).sqrt()).toMatchTypeOf<
+    MathJsChain<BigNumber>
+  >()
+  expectTypeOf(math.chain(math.complex(1, 2)).sqrt()).toMatchTypeOf<
+    MathJsChain<Complex>
+  >()
+  expectTypeOf(math.chain(math.fraction(1, 4)).sqrt()).toMatchTypeOf<
+    MathJsChain<Fraction>
+  >()
+
+  // nthRoot
+  expectTypeOf(math.chain(8).nthRoot(3)).toMatchTypeOf<
+    MathJsChain<number | Complex | Fraction | MathCollection>
+  >()
+  expectTypeOf(math.chain(math.fraction(8, 27)).nthRoot(3)).toMatchTypeOf<
+    MathJsChain<number | Complex | Fraction | MathCollection>
+  >()
+  expectTypeOf(
+    math.chain(math.fraction(8, 27)).nthRoot(math.fraction(3))
+  ).toMatchTypeOf<MathJsChain<number | Complex | Fraction | MathCollection>>()
 
   // ceil
   expectTypeOf(math.chain(1).ceil()).toMatchTypeOf<
@@ -1184,6 +1210,21 @@ Fractions examples
 
   // output formatting
   const _a = math.fraction('2/3')
+
+  // roots of fractions can be exact fractions, but can also
+  // fall back to number (or Complex) when they are non-rational
+  expectTypeOf(math.sqrt(math.fraction(4, 9))).toMatchTypeOf<
+    Fraction | number | Complex
+  >()
+  expectTypeOf(math.cbrt(math.fraction(8, 27))).toMatchTypeOf<
+    Fraction | number
+  >()
+  expectTypeOf(math.nthRoot(math.fraction(16, 81), 4)).toMatchTypeOf<
+    number | Complex | Fraction | MathCollection
+  >()
+  expectTypeOf(
+    math.nthRoot(math.fraction(16, 81), math.fraction(4))
+  ).toMatchTypeOf<number | Complex | Fraction | MathCollection>()
 }
 
 /*

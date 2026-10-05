@@ -47,13 +47,13 @@ export const createCbrt = /* #__PURE__ */ factory(name, dependencies, ({ config,
    *
    *    square, sqrt, cube
    *
-   * @param {number | BigNumber | Complex | Unit} x
+   * @param {number | BigNumber | Complex | Fraction | Unit} x
    *            Value for which to calculate the cubic root.
    * @param {boolean} [allRoots]  Optional, false by default. Only applicable
    *            when `x` is a number or complex number. If true, all complex
    *            roots are returned, if false (default) the principal root is
    *            returned.
-   * @return {number | BigNumber | Complex | Unit}
+   * @return {number | BigNumber | Complex | Fraction | Unit}
    *            Returns the cubic root of `x`
    */
   return typed(name, {
@@ -68,6 +68,8 @@ export const createCbrt = /* #__PURE__ */ factory(name, dependencies, ({ config,
     BigNumber: function (x) {
       return x.cbrt()
     },
+
+    Fraction: _cbrtFraction,
 
     Unit: _cbrtUnit
   })
@@ -101,6 +103,30 @@ export const createCbrt = /* #__PURE__ */ factory(name, dependencies, ({ config,
     } else {
       return principal
     }
+  }
+
+  /**
+   * Calculate the cubic root for a Fraction
+   * @param {Fraction} x
+   * @returns {Fraction | number} Returns the cubic root of x
+   * @private
+   */
+  function _cbrtFraction (x) {
+    // the cubic root of a negative value is the negated cubic root
+    // of its absolute value
+    const negate = isNegative(x)
+    const result = (negate ? unaryMinus(x) : x).pow(new Fraction(1, 3))
+
+    if (result !== null) {
+      return negate ? unaryMinus(result) : result
+    }
+
+    if (config.predictable) {
+      throw new Error('Result of cbrt is non-rational and cannot be expressed as a fraction')
+    }
+
+    // non-rational value -> downgrade to number
+    return cbrtNumber(x.valueOf())
   }
 
   /**
