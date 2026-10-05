@@ -5,6 +5,7 @@ import math from '../../../../src/defaultInstance.js'
 const mathPredictable = math.create({ predictable: true })
 const sqrt = math.sqrt
 const bignumber = math.bignumber
+const fraction = math.fraction
 
 describe('sqrt', function () {
   it('should return the square root of a boolean', function () {
@@ -52,6 +53,43 @@ describe('sqrt', function () {
   it('should return the square root of a negative bignumber when predictable:true', function () {
     assert.deepStrictEqual(mathPredictable.sqrt(bignumber(4)), bignumber(2))
     assert.ok(mathPredictable.sqrt(bignumber(-4)).isNaN())
+  })
+
+  it('should return the square root of a fraction', function () {
+    assert.deepStrictEqual(sqrt(fraction(0)), fraction(0))
+    assert.deepStrictEqual(sqrt(fraction(1)), fraction(1))
+    assert.deepStrictEqual(sqrt(fraction(4)), fraction(2))
+    assert.deepStrictEqual(sqrt(fraction(4, 9)), fraction(2, 3))
+    assert.deepStrictEqual(sqrt(fraction(9, 16)), fraction(3, 4))
+  })
+
+  it('should return a number for the square root of a fraction with a non-rational result', function () {
+    // falls back to number, like pow with a fractional exponent
+    assert.strictEqual(sqrt(fraction(2)), Math.sqrt(2))
+    assert.strictEqual(sqrt(fraction(1, 2)), Math.sqrt(0.5))
+  })
+
+  it('should throw for the square root of a fraction with a non-rational result when predictable:true', function () {
+    assert.deepStrictEqual(mathPredictable.sqrt(fraction(4, 9)), fraction(2, 3))
+    assert.throws(function () { mathPredictable.sqrt(fraction(2)) },
+      /Result of sqrt is non-rational and cannot be expressed as a fraction/)
+  })
+
+  it('should return the square root of a negative fraction', function () {
+    assert.deepStrictEqual(sqrt(fraction(-4, 9)), math.complex(0, 2 / 3))
+    assert.deepStrictEqual(sqrt(fraction(-16)), math.complex(0, 4))
+  })
+
+  it('should return the square root of a negative fraction when predictable:true', function () {
+    assert(typeof mathPredictable.sqrt(fraction(-4)), 'number')
+    assert(isNaN(mathPredictable.sqrt(fraction(-4))))
+  })
+
+  it('should return the square root of fractions in a fraction-configured instance', function () {
+    const mathFraction = math.create({ number: 'Fraction' })
+    assert.deepStrictEqual(mathFraction.evaluate('sqrt(4/9)'), fraction(2, 3))
+    assert.strictEqual(mathFraction.evaluate('sqrt(2)'), Math.sqrt(2))
+    assert.deepStrictEqual(mathFraction.evaluate('sqrt(-4/9)'), math.complex(0, 2 / 3))
   })
 
   it('should return the square root of a complex number', function () {

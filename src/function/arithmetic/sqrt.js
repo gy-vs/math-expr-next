@@ -1,9 +1,9 @@
 import { factory } from '../../utils/factory.js'
 
 const name = 'sqrt'
-const dependencies = ['config', 'typed', 'Complex']
+const dependencies = ['config', 'typed', 'Complex', 'Fraction']
 
-export const createSqrt = /* #__PURE__ */ factory(name, dependencies, ({ config, typed, Complex }) => {
+export const createSqrt = /* #__PURE__ */ factory(name, dependencies, ({ config, typed, Complex, Fraction }) => {
   /**
    * Calculate the square root of a value.
    *
@@ -25,9 +25,9 @@ export const createSqrt = /* #__PURE__ */ factory(name, dependencies, ({ config,
    *
    *    square, multiply, cube, cbrt, sqrtm
    *
-   * @param {number | BigNumber | Complex | Unit} x
+   * @param {number | BigNumber | Complex | Fraction | Unit} x
    *            Value for which to calculate the square root.
-   * @return {number | BigNumber | Complex | Unit}
+   * @return {number | BigNumber | Complex | Fraction | Unit}
    *            Returns the square root of `x`
    */
   return typed('sqrt', {
@@ -43,6 +43,26 @@ export const createSqrt = /* #__PURE__ */ factory(name, dependencies, ({ config,
       } else {
         // negative value -> downgrade to number to do complex value computation
         return _sqrtNumber(x.toNumber())
+      }
+    },
+
+    Fraction: function (x) {
+      if (x.s < 0) {
+        // negative value -> downgrade to number to do complex value computation
+        return _sqrtNumber(x.valueOf())
+      }
+
+      const result = x.pow(new Fraction(1, 2))
+
+      if (result != null) {
+        return result
+      }
+
+      if (config.predictable) {
+        throw new Error('Result of sqrt is non-rational and cannot be expressed as a fraction')
+      } else {
+        // downgrade to number, like the fallback of pow for fractions
+        return _sqrtNumber(x.valueOf())
       }
     },
 

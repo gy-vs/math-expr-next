@@ -3,9 +3,11 @@ import assert from 'assert'
 
 import { approxEqual, approxDeepEqual } from '../../../../tools/approx.js'
 import math from '../../../../src/defaultInstance.js'
+const mathPredictable = math.create({ predictable: true })
 const cbrt = math.cbrt
 const bignumber = math.bignumber
 const complex = math.complex
+const fraction = math.fraction
 
 describe('cbrt', function () {
   it('should return the cubic root of a boolean', function () {
@@ -62,6 +64,39 @@ describe('cbrt', function () {
   it('should return the cubic root of a negative bignumber', function () {
     assert.deepStrictEqual(cbrt(bignumber(-8)), bignumber(-2))
     assert.deepStrictEqual(cbrt(bignumber(-64)), bignumber(-4))
+  })
+
+  it('should return the cubic root of a fraction', function () {
+    assert.deepStrictEqual(cbrt(fraction(0)), fraction(0))
+    assert.deepStrictEqual(cbrt(fraction(1)), fraction(1))
+    assert.deepStrictEqual(cbrt(fraction(8, 27)), fraction(2, 3))
+    assert.deepStrictEqual(cbrt(fraction(64)), fraction(4))
+    assert.deepStrictEqual(cbrt(fraction(27, 64)), fraction(3, 4))
+  })
+
+  it('should return the cubic root of a negative fraction', function () {
+    assert.deepStrictEqual(cbrt(fraction(-8, 27)), fraction(-2, 3))
+    assert.deepStrictEqual(cbrt(fraction(-64)), fraction(-4))
+  })
+
+  it('should return a number for the cubic root of a fraction with a non-rational result', function () {
+    // falls back to number, like pow with a fractional exponent
+    assert.strictEqual(cbrt(fraction(2)), Math.cbrt(2))
+    assert.strictEqual(cbrt(fraction(-2)), Math.cbrt(-2))
+  })
+
+  it('should throw for the cubic root of a fraction with a non-rational result when predictable:true', function () {
+    assert.deepStrictEqual(mathPredictable.cbrt(fraction(8, 27)), fraction(2, 3))
+    assert.deepStrictEqual(mathPredictable.cbrt(fraction(-8, 27)), fraction(-2, 3))
+    assert.throws(function () { mathPredictable.cbrt(fraction(2)) },
+      /Result of cbrt is non-rational and cannot be expressed as a fraction/)
+  })
+
+  it('should return the cubic root of fractions in a fraction-configured instance', function () {
+    const mathFraction = math.create({ number: 'Fraction' })
+    assert.deepStrictEqual(mathFraction.evaluate('cbrt(8/27)'), fraction(2, 3))
+    assert.deepStrictEqual(mathFraction.evaluate('cbrt(-8/27)'), fraction(-2, 3))
+    assert.strictEqual(mathFraction.evaluate('cbrt(2)'), Math.cbrt(2))
   })
 
   it('should return the cubic root of a complex number', function () {

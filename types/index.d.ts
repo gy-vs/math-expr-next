@@ -1138,6 +1138,7 @@ export interface MathJsInstance extends MathJsFactory {
    * @returns Returns the cubic root of x
    */
   cbrt(x: Complex, allRoots?: boolean): Complex
+  cbrt(x: Fraction): Fraction | number
   cbrt<T extends number | BigNumber | Unit>(x: T): T
 
   // Rounding functions, grouped for similarity, even though it breaks
@@ -1429,9 +1430,9 @@ export interface MathJsInstance extends MathJsFactory {
    * @return The nth root of a
    */
   nthRoot(
-    a: number | BigNumber | MathCollection | Complex,
-    root?: number | BigNumber
-  ): number | Complex | MathCollection
+    a: number | BigNumber | Fraction | MathCollection | Complex,
+    root?: number | BigNumber | Fraction
+  ): number | Complex | Fraction | MathCollection
 
   /**
    * Calculates the power of x to y, x ^ y. Matrix exponentiation is
@@ -1459,6 +1460,7 @@ export interface MathJsInstance extends MathJsFactory {
    * @returns Returns the square root of x
    */
   sqrt(x: number): number | Complex
+  sqrt(x: Fraction): Fraction | number | Complex
   sqrt<T extends BigNumber | Complex | Unit>(x: T): T
 
   /**
@@ -5009,6 +5011,10 @@ export interface MathJsChain<TValue> {
    * a number or complex number. If true, all complex roots are returned,
    * if false (default) the principal root is returned.
    */
+  cbrt(
+    this: MathJsChain<Fraction>,
+    allRoots?: boolean
+  ): MathJsChain<Fraction | number>
   cbrt<T extends number | BigNumber | Complex | Unit>(
     this: MathJsChain<T>,
     allRoots?: boolean
@@ -5339,9 +5345,9 @@ export interface MathJsChain<TValue> {
    * @param root The root. Default value: 2.
    */
   nthRoot(
-    this: MathJsChain<number | BigNumber | MathCollection | Complex>,
-    root?: number | BigNumber
-  ): MathJsChain<number | Complex | MathCollection>
+    this: MathJsChain<number | BigNumber | Fraction | MathCollection | Complex>,
+    root?: number | BigNumber | Fraction
+  ): MathJsChain<number | Complex | Fraction | MathCollection>
 
   /**
    * Calculates the power of x to y, x ^ y. Matrix exponentiation is
@@ -5367,6 +5373,7 @@ export interface MathJsChain<TValue> {
    * evaluated element wise.
    */
 
+  sqrt(this: MathJsChain<Fraction>): MathJsChain<Fraction | number | Complex>
   sqrt<T extends number | BigNumber | Complex | MathCollection | Unit>(
     this: MathJsChain<T>
   ): MathJsChain<T>

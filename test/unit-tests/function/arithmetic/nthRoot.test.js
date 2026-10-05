@@ -3,12 +3,14 @@ import assert from 'assert'
 
 import { approxEqual, approxDeepEqual } from '../../../../tools/approx.js'
 import math from '../../../../src/defaultInstance.js'
+const mathPredictable = math.create({ predictable: true })
 const matrix = math.matrix
 const sparse = math.sparse
 const unit = math.unit
 const nthRoot = math.nthRoot
 const big = math.bignumber
 const complex = math.complex
+const fraction = math.fraction
 
 describe('nthRoot', function () {
   it('should return the nthRoot of a boolean value', function () {
@@ -109,6 +111,61 @@ describe('nthRoot', function () {
     assert.deepStrictEqual(nthRoot(big(Infinity), big(-3)), big(0))
   })
 
+  it('should return the nthRoot for fractions', function () {
+    assert.deepStrictEqual(nthRoot(fraction(4, 9)), fraction(2, 3)) // default root 2
+    assert.deepStrictEqual(nthRoot(fraction(16, 81), 4), fraction(2, 3))
+    assert.deepStrictEqual(nthRoot(fraction(16, 81), fraction(4)), fraction(2, 3))
+    assert.deepStrictEqual(nthRoot(fraction(8, 27), 3), fraction(2, 3))
+    assert.deepStrictEqual(nthRoot(fraction(4), fraction(1, 2)), fraction(16))
+    assert.deepStrictEqual(nthRoot(fraction(0), 3), fraction(0))
+  })
+
+  it('should return the nthRoot for negative fractions', function () {
+    assert.deepStrictEqual(nthRoot(fraction(-8, 27), 3), fraction(-2, 3))
+    assert.deepStrictEqual(nthRoot(fraction(-8, 27), fraction(3)), fraction(-2, 3))
+    assert.deepStrictEqual(nthRoot(fraction(-64), 3), fraction(-4))
+  })
+
+  it('should return the nthRoot for negative fraction roots', function () {
+    assert.deepStrictEqual(nthRoot(fraction(8, 27), -3), fraction(3, 2))
+    assert.deepStrictEqual(nthRoot(fraction(-8, 27), -3), fraction(-3, 2))
+  })
+
+  it('should return a number for the nthRoot of a fraction with a non-rational result', function () {
+    // falls back to number, like pow with a fractional exponent
+    assert.strictEqual(nthRoot(fraction(2), 2), Math.sqrt(2))
+    approxEqual(nthRoot(fraction(2), 3), 1.2599210498948732)
+    approxEqual(nthRoot(fraction(-2), 3), -1.2599210498948732)
+  })
+
+  it('should throw for the nthRoot of a fraction with a non-rational result when predictable:true', function () {
+    assert.deepStrictEqual(mathPredictable.nthRoot(fraction(16, 81), 4), fraction(2, 3))
+    assert.throws(function () { mathPredictable.nthRoot(fraction(2), 2) },
+      /Result of nthRoot is non-rational and cannot be expressed as a fraction/)
+  })
+
+  it('should throw an error when a fraction value is negative and the root is even', function () {
+    assert.throws(function () { nthRoot(fraction(-27), 2) }, /Root must be odd when a is negative/)
+    assert.throws(function () { nthRoot(fraction(-27), fraction(2)) }, /Root must be odd when a is negative/)
+    assert.throws(function () { nthRoot(fraction(-27), fraction(1, 2)) }, /Root must be odd when a is negative/)
+  })
+
+  it('should throw an error when the fraction root is zero', function () {
+    assert.throws(function () { nthRoot(fraction(4), 0) }, /Root must be non-zero/)
+    assert.throws(function () { nthRoot(fraction(4), fraction(0)) }, /Root must be non-zero/)
+  })
+
+  it('should throw an error for a zero fraction with a negative root, like pow', function () {
+    assert.throws(function () { nthRoot(fraction(0), -2) }, /Division by Zero/)
+  })
+
+  it('should return the nthRoot of fractions in a fraction-configured instance', function () {
+    const mathFraction = math.create({ number: 'Fraction' })
+    assert.deepStrictEqual(mathFraction.evaluate('nthRoot(16/81, 4)'), fraction(2, 3))
+    assert.deepStrictEqual(mathFraction.evaluate('nthRoot(-8/27, 3)'), fraction(-2, 3))
+    assert.strictEqual(mathFraction.evaluate('nthRoot(2, 2)'), Math.sqrt(2))
+  })
+
   it('should throw an error when used with a complex number', function () {
     assert.throws(function () { nthRoot(complex('-8'), 3) })
   })
@@ -151,6 +208,12 @@ describe('nthRoot', function () {
     it('should return the nthRoot for array - sparse matrix', function () {
       approxDeepEqual(nthRoot([[64, 3125], [0, -1]], sparse([[3, 5], [1, 3]])), matrix([[4, 5], [0, -1]]))
     })
+
+    it('should return the nthRoot for an array of fractions', function () {
+      assert.deepStrictEqual(nthRoot([fraction(1, 4), fraction(9, 16)], 2), [fraction(1, 2), fraction(3, 4)])
+      assert.deepStrictEqual(nthRoot([fraction(1, 4), fraction(9, 16)], fraction(2)), [fraction(1, 2), fraction(3, 4)])
+      assert.deepStrictEqual(nthRoot(fraction(4, 9), [2, fraction(2)]), [fraction(2, 3), fraction(2, 3)])
+    })
   })
 
   describe('DenseMatrix', function () {
@@ -169,6 +232,11 @@ describe('nthRoot', function () {
 
     it('should return the nthRoot for dense matrix - sparse matrix', function () {
       approxDeepEqual(nthRoot(matrix([[64, 3125], [0, -1]]), sparse([[3, 5], [1, 3]])), matrix([[4, 5], [0, -1]]))
+    })
+
+    it('should return the nthRoot for a dense matrix of fractions', function () {
+      assert.deepStrictEqual(nthRoot(matrix([fraction(1, 4), fraction(9, 16)]), 2), matrix([fraction(1, 2), fraction(3, 4)]))
+      assert.deepStrictEqual(nthRoot(matrix([fraction(1, 4), fraction(9, 16)]), fraction(2)), matrix([fraction(1, 2), fraction(3, 4)]))
     })
   })
 

@@ -190,6 +190,45 @@ Bignumbers examples
 }
 
 /*
+  Root functions with fractions (sqrt, cbrt, nthRoot)
+*/
+{
+  const math = create(all, {})
+
+  // sqrt of a fraction returns a Fraction when the result is rational,
+  // falls back to number when it is not, and to Complex for negative input
+  expectTypeOf(math.sqrt(math.fraction(4, 9))).toMatchTypeOf<
+    Fraction | number | Complex
+  >()
+  assert.deepStrictEqual(math.sqrt(math.fraction(4, 9)), math.fraction(2, 3))
+
+  // cbrt of a fraction returns a Fraction or falls back to number
+  expectTypeOf(math.cbrt(math.fraction(8, 27))).toMatchTypeOf<
+    Fraction | number
+  >()
+  assert.deepStrictEqual(math.cbrt(math.fraction(-8, 27)), math.fraction(-2, 3))
+
+  // nthRoot accepts fractions both as value and as root
+  expectTypeOf(math.nthRoot(math.fraction(16, 81), 4)).toMatchTypeOf<
+    number | Complex | Fraction | MathCollection
+  >()
+  expectTypeOf(
+    math.nthRoot(math.fraction(16, 81), math.fraction(4))
+  ).toMatchTypeOf<number | Complex | Fraction | MathCollection>()
+  expectTypeOf(
+    math.nthRoot([math.fraction(1, 4), math.fraction(9, 16)], 2)
+  ).toMatchTypeOf<number | Complex | Fraction | MathCollection>()
+  assert.deepStrictEqual(
+    math.nthRoot(math.fraction(16, 81), 4),
+    math.fraction(2, 3)
+  )
+  assert.deepStrictEqual(
+    math.nthRoot(math.fraction(-8, 27), 3),
+    math.fraction(-2, 3)
+  )
+}
+
+/*
   Algebra function examples
 */
 {
@@ -626,6 +665,9 @@ Chaining examples
   expectTypeOf(math.chain(math.complex(1, 2)).cbrt()).toMatchTypeOf<
     MathJsChain<Complex>
   >()
+  expectTypeOf(math.chain(math.fraction(8, 27)).cbrt()).toMatchTypeOf<
+    MathJsChain<Fraction | number>
+  >()
   // @ts-expect-error ... verify cbrt does not run on arrays.
   assert.throws(() => math.chain([1, 2]).cbrt(), TypeError)
   assert.throws(
@@ -924,6 +966,29 @@ Chaining examples
       )
       .log10()
   ).toMatchTypeOf<MathJsChain<Matrix>>()
+
+  // sqrt
+  expectTypeOf(math.chain(1).sqrt()).toMatchTypeOf<MathJsChain<number>>()
+  expectTypeOf(math.chain(math.bignumber(1)).sqrt()).toMatchTypeOf<
+    MathJsChain<BigNumber>
+  >()
+  expectTypeOf(math.chain(math.complex(1, 2)).sqrt()).toMatchTypeOf<
+    MathJsChain<Complex>
+  >()
+  expectTypeOf(math.chain(math.fraction(4, 9)).sqrt()).toMatchTypeOf<
+    MathJsChain<Fraction | number | Complex>
+  >()
+
+  // nthRoot
+  expectTypeOf(math.chain(1).nthRoot(3)).toMatchTypeOf<
+    MathJsChain<number | Complex | Fraction | MathCollection>
+  >()
+  expectTypeOf(math.chain(math.fraction(16, 81)).nthRoot(4)).toMatchTypeOf<
+    MathJsChain<number | Complex | Fraction | MathCollection>
+  >()
+  expectTypeOf(
+    math.chain(math.fraction(16, 81)).nthRoot(math.fraction(4))
+  ).toMatchTypeOf<MathJsChain<number | Complex | Fraction | MathCollection>>()
 
   expectTypeOf(math.chain([1, 2]).count()).toMatchTypeOf<MathJsChain<number>>()
   expectTypeOf(math.chain('mathjs').count()).toMatchTypeOf<
